@@ -1,17 +1,38 @@
 from __future__ import annotations
 
 from datetime import datetime, date
-from typing import Optional, Literal
+from typing import Optional
 from uuid import UUID, uuid4
+from enum import Enum
 
-from sqlmodel import SQLModel, Field, Relationship, Column
-from sqlalchemy import text
+from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import Column, text, DateTime
 
 
-AccountType = Literal["bank", "cash", "credit_card"]
-CategoryType = Literal["income", "expense"]
-TxType = Literal["income", "expense", "transfer_in", "transfer_out", "credit_payment"]
-PayMethod = Literal["cash", "card", "sinpe", "bank_transfer"]
+class AccountType(str, Enum):
+    bank = "bank"
+    cash = "cash"
+    credit_card = "credit_card"
+
+
+class CategoryType(str, Enum):
+    income = "income"
+    expense = "expense"
+
+
+class TxType(str, Enum):
+    income = "income"
+    expense = "expense"
+    transfer_in = "transfer_in"
+    transfer_out = "transfer_out"
+    credit_payment = "credit_payment"
+
+
+class PayMethod(str, Enum):
+    cash = "cash"
+    card = "card"
+    sinpe = "sinpe"
+    bank_transfer = "bank_transfer"
 
 
 class User(SQLModel, table=True):
@@ -23,10 +44,7 @@ class User(SQLModel, table=True):
     currency: str = Field(default="CRC", max_length=3)
 
     created_at: datetime = Field(
-        sa_column=Column(
-            nullable=False,
-            server_default=text("now()")
-        )
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
     )
 
     accounts: list["Account"] = Relationship(back_populates="user")
@@ -46,10 +64,10 @@ class Account(SQLModel, table=True):
     active: bool = Field(default=True)
 
     created_at: datetime = Field(
-        sa_column=Column(nullable=False, server_default=text("now()"))
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
     )
 
-    user: User = Relationship(back_populates="accounts")
+    user: "User" = Relationship(back_populates="accounts")
     transactions: list["Transaction"] = Relationship(back_populates="account")
 
 
@@ -63,10 +81,10 @@ class Category(SQLModel, table=True):
     type: CategoryType = Field(index=True)
 
     created_at: datetime = Field(
-        sa_column=Column(nullable=False, server_default=text("now()"))
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
     )
 
-    user: User = Relationship(back_populates="categories")
+    user: "User" = Relationship(back_populates="categories")
 
 
 class Transaction(SQLModel, table=True):
@@ -86,11 +104,11 @@ class Transaction(SQLModel, table=True):
     description: Optional[str] = None
     counterparty: Optional[str] = Field(default=None, index=True)
 
-    group_id: Optional[UUID] = Field(default=None, index=True)  # para transferencias y pago tarjeta
+    group_id: Optional[UUID] = Field(default=None, index=True)
 
     created_at: datetime = Field(
-        sa_column=Column(nullable=False, server_default=text("now()"))
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
     )
 
-    user: User = Relationship(back_populates="transactions")
-    account: Account = Relationship(back_populates="transactions")
+    user: "User" = Relationship(back_populates="transactions")
+    account: "Account" = Relationship(back_populates="transactions")
