@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from enum import Enum
 
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, text, DateTime
+from sqlalchemy import Column, String, text, DateTime
 
 
 class AccountType(str, Enum):
@@ -39,12 +39,16 @@ class User(SQLModel, table=True):
     __tablename__ = "users"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    email: str = Field(unique=True, index=True)
+
+    email: str = Field(
+        sa_column=Column(String, unique=True, index=True, nullable=False)
+    )
+
     password_hash: str
     currency: str = Field(default="CRC", max_length=3)
 
     created_at: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
+        sa_column=Column(nullable=False, server_default=text("now()"))
     )
 
     accounts: list["Account"] = Relationship(back_populates="user")
