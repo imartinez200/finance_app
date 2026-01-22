@@ -3,12 +3,13 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.models import User
-from app.schemas import RegisterIn, LoginIn, TokenOut
+from app.schemas import RegisterIn, LoginIn, TokenOut, UserOut
 from app.security import hash_password, verify_password, create_access_token
+from app.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-@router.post("/register")
+@router.post("/register", response_model=UserOut)
 def register(payload: RegisterIn, session: Session = Depends(get_session)):
     existing = session.exec(select(User).where(User.email == payload.email)).first()
     if existing:
@@ -18,7 +19,8 @@ def register(payload: RegisterIn, session: Session = Depends(get_session)):
     session.add(user)
     session.commit()
     session.refresh(user)
-    return {"user_id": str(user.id), "message": "registered"}
+#    return {"user_id": str(user.id), "message": "registered"}
+    return user
 
 @router.post("/login", response_model=TokenOut)
 def login(payload: LoginIn, session: Session = Depends(get_session)):
@@ -30,5 +32,6 @@ def login(payload: LoginIn, session: Session = Depends(get_session)):
     return TokenOut(access_token=token)
 
 @router.get("/me")
-def me(current_user: User = Depends(__import__("app.deps").deps.get_current_user)):
+def me(current_user: User = Depends(get_current_user)):
+#def me(current_user: User = Depends(__import__("app.deps").deps.get_current_user)):
     return {"user_id": str(current_user.id), "email": current_user.email, "currency": current_user.currency}
